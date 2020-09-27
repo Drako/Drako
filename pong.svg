@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<svg width="800px" height="600px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.2" baseProfile="tiny" onload="game.init();">
+    <title>SVG-Pong by Felix Bytow</title>
+    <desc>A little Pong game implemented as an SVG</desc>
+
+    <!-- The metadata -->
+    <metadata>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns" xmlns:rdfs="http://www.w3.org/2000/02/rdf-schema" xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <rdf:Description rdf:about="https://files.draconic-bytes.de/pong.svg">
+                <dc:creator>drako@draconic-bytes.de</dc:creator>
+                <dc:contributor>stummi@stummi.org</dc:contributor>
+                <dc:publisher>https://www.draconic-bytes.de</dc:publisher>
+                <dc:subject>pong, svg, game</dc:subject>
+                <dc:description>pong game implemented as an svg</dc:description>
+                <dc:identifier>https://files.draconic-bytes.de/pong.svg</dc:identifier>
+                <dc:format>image/svg+xml</dc:format>
+                <dc:title>svg-pong</dc:title>
+                <dc:language>en</dc:language>
+                <dc:rights>Copyright © 2013, Felix Bytow &lt;drako@draconic-bytes.de&gt;</dc:rights>
+                <dc:rights>Copyright © 2014, Michael Stummvoll &lt;stummi@stummi.org&gt;</dc:rights>
+            </rdf:Description>
+        </rdf:RDF>
+    </metadata>
+
+    <defs>
+        <!-- Style -->
+        <style type="text/css"><![CDATA[
+            text {
+                font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+                font-weight: 300;
+                font-size:   20px;
+                text-anchor: middle;
+            }
+        ]]></style>
+
+        <!-- Javascript -->
+        <script type="text/javascript"><![CDATA[
+            var game = {
+                fps:     100,
+                stopped: false,
+                _keys:   {},
+
+                // Keycodes
+                UP:      38,
+                DOWN:    40,
+
+                // TTL
+                INFINITE: -1,
+
+                // Forces on the ball
+                _forces:  [],
+                _reflect: { x: false, y: false }
+            };
+
+            game.init = function() {
+                game._interval = setInterval(game.update, 1000 / game.fps);
+                game.ball      = document.getElementById('ball');
+                game.lclub     = document.getElementById('lclub');
+                game.rclub     = document.getElementById('rclub');
+                game.lpoints   = document.getElementById('lpoints').firstChild;
+                game.rpoints   = document.getElementById('rpoints').firstChild;
+
+                window.addEventListener('keydown', game.on_keydown);
+                window.addEventListener('keyup', game.on_keyup);
+
+                game.add_force(1, 1, -1);
+                if (Math.random() > 0.5) {
+                    game._reflect.x = true;
+                }
+                if (Math.random() > 0.5) {
+                    game._reflect.y = true;
+                }
+            }
+
+            game.add_force = function(x, y, ttl) {
+                game._forces.push({ 'x': x, 'y': y, 'ttl': ttl });
+            }
+
+            game.on_keydown = function(evt) {
+                game._keys[evt.keyCode] = true;
+            }
+
+            game.on_keyup = function(evt) {
+                delete game._keys[evt.keyCode];
+            }
+
+            game.keypressed = function(keycode) {
+                return game._keys[keycode];
+            }
+
+            game.reset_ball = function() {
+                game._forces = [];
+
+                game.add_force(1, 1, -1);
+                if (Math.random() > 0.5) {
+                    game._reflect.x = true;
+                }
+                if (Math.random() > 0.5) {
+                    game._reflect.y = true;
+                }
+                game.ball_pos({ x: 400, y: 325 });
+            }
+
+            game.update = function() {
+                game.handle_player('left');
+                game.handle_computer('right');
+                game.handle_ball();
+            }
+
+            game.handle_player = function(side) {
+                if (game.keypressed(game.UP)) {
+                    game.move_up(side);
+                }
+                if (game.keypressed(game.DOWN)) {
+                    game.move_down(side);
+                }
+            }
+
+            game.handle_computer = function(side) {
+                var my_y    = game.player_pos(side) + 64;
+				var my_x    = 760;
+                var ball_y  = game.ball_pos().y;
+				var ball_x  = game.ball_pos().x;
+				var force   = game.accumulate_forces();
+
+				if(force.x < 0) {
+					return;
+				}
+
+				var ball_div = my_x - ball_x;
+
+				var supposed_y = ball_y + (force.y / force.x) * ball_div;
+				var tgt = supposed_y;
+
+				while (tgt < 76 || tgt > 574) {
+					if(tgt < 76) {
+						tgt = 76 + (76-tgt);
+					}
+
+					if(tgt > 574) {
+						tgt = 574 - (tgt-574);
+					}
+				}
+
+                if (tgt < my_y - 10) { game.move_up(side);   }
+                if (tgt > my_y + 10) { game.move_down(side); }
+            }
+
+            game.accumulate_forces = function() {
+                var force = { x: 0, y: 0 };
+                for (var n = game._forces.length - 1; n >= 0; --n) {
+                    force.x += game._forces[n].x;
+                    force.y += game._forces[n].y;
+
+                    if (game._forces[n].ttl > 0) {
+                        --game._forces[n].ttl;
+                    }
+                    if (game._forces[n] == 0) {
+                        game._forces.splice(n, 1);
+                    }
+                }
+
+                force.x = Math.log(force.x);
+                if (force.x < 1)  { force.x = 1;  }
+                if (force.x > 20) { force.x = 20; }
+
+                force.y = Math.log(force.y);
+                if (force.y < 1)  { force.y = 1;  }
+                if (force.y > 20) { force.y = 20; }
+
+                if (game._reflect.x) {
+                    force.x *= -1;
+                }
+                if (game._reflect.y) {
+                    force.y *= -1;
+                }
+
+                return force;
+            }
+
+            game.handle_ball = function() {
+                var force = game.accumulate_forces();
+                var reflect = game._reflect;
+                var ball = game.ball_pos();
+                ball.x += force.x;
+                ball.y += force.y;
+
+                // top bottom collision
+                if (ball.y <= 76)  { reflect.y = false; game.add_force(parseInt(Math.random() * 2, 10), 3, 6); }
+                if (ball.y >= 574) { reflect.y = true;  game.add_force(parseInt(Math.random() * 2, 10), 3, 6); }
+
+                // club collision
+                if (game.ball_collides_with_player('left'))  { reflect.x = false; game.add_force(3, parseInt(Math.random() * 2, 10), 6); }
+                if (game.ball_collides_with_player('right')) { reflect.x = true;  game.add_force(3, parseInt(Math.random() * 2, 10), 6); }
+
+                // left right collision
+                if (ball.x >= 760 || ball.x <= 40) {
+                    if (ball.x >= 760) { game.add_point('left');  }
+                    if (ball.x <= 40)  { game.add_point('right'); }
+                    game.reset_ball();
+                    return;
+                }
+
+                // move ball
+                game.move_ball(force.x, force.y);
+
+                // update reflection
+                game._reflect = reflect;
+            }
+
+            game.move_ball = function(x, y) {
+                var pos = game.ball_pos();
+                pos.x += x;
+                pos.y += y;
+                game.ball_pos(pos);
+            }
+
+            game.add_point = function(side) {
+                var player = side == 'left' ? game.lpoints : game.rpoints;
+                player.textContent = parseInt(player.textContent, 10) + 1;
+            }
+
+            game.move_up = function(side) {
+                game.player_pos(side, game.player_pos(side) - 2);
+            }
+
+            game.move_down = function(side) {
+                game.player_pos(side, game.player_pos(side) + 2);
+            }
+
+            game.ball_collides_with_player = function(side) {
+                var bpos = game.ball_pos();
+                var pr = game.player_rect(side);
+
+                var distance = { x: Math.abs(bpos.x - pr.x - 10),  y: Math.abs(bpos.y - pr.y - 64) };
+
+                if (distance.x > 35) { return false; }
+                if (distance.y > 89) { return false; }
+
+                if (distance.x <= 10) { return true; }
+                if (distance.y <= 64) { return true; }
+
+                var corner_dist_sq =
+                    (distance.x - 10) * (distance.x - 10) +
+                    (distance.y - 64) * (distance.y - 64);
+
+                return (corner_dist_sq <= 625);
+            }
+
+            game.ball_pos = function(pos) {
+                if (pos != null && typeof(pos) === 'object') {
+                    var x = pos.x;
+                    var y = pos.y;
+
+                    // ATTENTION: this only makes sure the ball never leaves the field
+                    // there are no checks for collisions in here (e.g. with the players)
+
+                    if (x > 774) { x = 774; }
+                    if (x < 26)  { x = 26;  }
+                    game.ball.setAttribute('cx', x + 'px');
+
+                    if (y > 574) { y = 574; }
+                    if (y < 76)  { y = 76;  }
+                    game.ball.setAttribute('cy', y + 'px');
+                }
+
+                var result = {};
+
+                result.x = parseInt(game.ball.getAttribute('cx'), 10);
+                result.y = parseInt(game.ball.getAttribute('cy'), 10);
+
+                return result;
+            }
+
+            game.player_pos = function(side, y) {
+                var player = side == 'left' ? game.lclub : game.rclub;
+
+                if (y) {
+                    if (y < 50)  { y = 50;  }
+                    if (y > 470) { y = 470; }
+
+                    player.setAttribute('y', y + 'px');
+                }
+
+                return parseInt(player.getAttribute('y'), 10);
+            }
+
+            game.player_rect = function(side) {
+                var player = side == 'left' ? game.lclub : game.rclub;
+                return {
+                    x:      parseInt(player.getAttribute('x'), 10),
+                    y:      parseInt(player.getAttribute('y'), 10),
+                    width:  parseInt(player.getAttribute('width'), 10),
+                    height: parseInt(player.getAttribute('height'), 10)
+                };
+            }
+        ]]></script>
+    </defs>
+
+    <!-- The background -->
+    <rect x="0px" y="0px" width="800px" height="600px" fill="black"/>
+
+    <!-- The border -->
+    <rect x="0px" y="0px" width="800px" height="600px" fill="none" stroke="white"/>
+    <line x1="0px" y1="49px" x2="800px" y2="49px" stroke="white" stroke-width="1px"/>
+
+    <!-- The ball -->
+    <circle id="ball" cx="400px" cy="325px" r="25px" fill="green"/>
+
+    <!-- The players -->
+    <rect id="lclub" x="10px" y="260px" width="20px" height="128px" fill="red"/>
+    <rect id="rclub" x="770px" y="260px" width="20px" height="128px" fill="blue"/>
+
+    <!-- The points -->
+    <text x="400px" y="30px" fill="white">:</text>
+    <text x="200px" y="30px" fill="white">Player</text>
+    <text id="lpoints" x="370px" y="30px" fill="white">0</text>
+    <text x="600px" y="30px" fill="white">Computer</text>
+    <text id="rpoints" x="430px" y="30px" fill="white">0</text>
+</svg>
+
