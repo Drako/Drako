@@ -1,6 +1,6 @@
 ### Hi there 👋
 
-![Pong SVG](./pong.svg)
+<iframe src="https://files.draconic-bytes.de/pong.svg"></iframe>
 
 <!--
 **Drako/Drako** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
