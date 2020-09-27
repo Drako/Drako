@@ -1,6 +1,6 @@
 ### Hi there 👋
 
-<iframe src="https://files.draconic-bytes.de/pong.svg"></iframe>
+Play some pong in your browser [here](https://files.draconic-bytes.de/pong.svg).
 
 <!--
 **Drako/Drako** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
