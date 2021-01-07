@@ -2,6 +2,7 @@
 
 - Play some pong in your browser [here](https://files.draconic-bytes.de/pong.svg) (Written as an SVG with embedded JS)
 - Or some Tic Tac Toe [here](https://tictactoe.drako.guru) (Written in Elm, [source](https://github.com/Drako/TicTacToe))
+- [Here](https://spotify-backup.drako.guru) you can find a Backup tool for Spotify playlists (Written in Elm, [source](https://github.com/Drako/SpotifyBackup))
 
 <!--
 **Drako/Drako** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
